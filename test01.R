@@ -411,25 +411,36 @@ is.na(leadership[,6:10]) #watch q1~q5
 leadership$age[leadership$age == 99] <- NA
 leadership
 
-#---NA-clear---
-x <- c(1,2,3,3)
-lapply(x,sum)
+#---NA-clear-------------------
+x <- c(1,2,NA,3)
+y <- sum(x,na.rm = T)
+y
+leadership
+newData <- na.omit(leadership)
+newData
+#----process-Date----------------------------
+myformat <- "%m/%d/%Y"
+leadership$date <- as.Date(leadership$date,myformat)
+
+#----practice-----
+#----date---
+today <- Sys.Date()
+format(today,format="%B %d %Y")
+
+today <- Sys.Date()
+dob <- as.Date("1956-10-12")
+difftime(today,dob,units = "weeks")
+format(dob,format("%A"))
+#---
+set.seed(1234)
+c <- matrix(runif(12),nrow=3)
+c
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
+#------------------------
 
 
 
