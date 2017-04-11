@@ -28,9 +28,12 @@ Math <- c(502, 600, 412, 358, 495, 512, 410, 625, 573, 522)
 Science <- c(95, 99, 80, 82, 75, 85, 80, 95, 89, 86)
 English <- c(25, 22, 18, 15, 20, 28, 15, 30, 27, 18)
 roster <- data.frame(Student, Math, Science, English,stringsAsFactors=FALSE)
+roster
 #==================================
 
 options(digits=3)
+
+?option
 attach(mtcars)
 aggdata <-aggregate(mtcars, by=list(cyl,gear), 
                     FUN=mean, na.rm=TRUE)
@@ -436,31 +439,393 @@ set.seed(1234)
 c <- matrix(runif(12),nrow=3)
 c
 
-
-
-
-
 #------------------------
+set.seed(1234)
+dic=c(1:6)
+n=100
+t1 = sample(dic,n,replace=T)
+t2 = sample(dic,100,replace=T)
+tx = t1+t2
+tx
+table(tx)
+table(tx)/length(tx)
+barplot(table(tx)/length(tx))
+
+#-----
+rnorm(n=100000,mean=3,sd=2)
+hist(rnorm(n=100000,mean=3,sd=2))
+
+par(mfrow=c(3,1))
+xlimits = range(-10,10)
+hist(rnorm(10000,mean = 0,sd = 1),xlim=xlimits)
+hist(rnorm(10000,mean = 0,sd = 2),xlim=xlimits)
+hist(rnorm(10000,mean = 0,sd = 3),xlim=xlimits)
+
+hist(rnorm(10000,mean = 0,sd=1),xlim=xlimits)
+hist(rnorm(10000,mean = 3,sd=1),xlim=xlimits)
+hist(rnorm(10000,mean = 6,sd=1),xlim=xlimits)
+
+par(mfrow=c(1,1))
+curve(dnorm(x,mean=2,sd=1),-5,5)
+
+#=====================
+load("e:/r/ames.Rdata")
+area = ames$Gr.Liv.Area
+
+sample_means10 = rep(NA, 5000)
+sample_means50 = rep(NA, 5000)
+sample_means100 = rep(NA, 5000)
+
+for (i in 1:5000){
+  samp = sample(area, 10,replace=F)
+  sample_means10[i] = mean(samp)
+  samp = sample(area, 50)
+  sample_means50[i] = mean(samp)
+  samp = sample(area, 100)
+  sample_means100[i] = mean(samp)
+}
+
+par(mfrow = c(3, 1))
+xlimits = range(sample_means10)
+hist(sample_means10, breaks = 20, xlim = xlimits)
+hist(sample_means50, breaks = 20, xlim = xlimits)
+hist(sample_means100, breaks = 20, xlim = xlimits)
+
+#example1: Check Cola is 300ml?
+#H0: mu = 300
+#H1: mu =\= 300
+
+pop_mean <- 300
+pop_sd <- 10
+coke = c(278,289,291,291,291,285,295,278,304,287,291,287,288,300,309,280,294,283,292,306)
+
+fivenum(coke)
+hist(coke)
+sde <- pop_sd/sqrt(length(coke))
+
+z <- (mean(coke)-pop_mean)/sde
+z
+
+p <- (1-pnorm(abs(z)))*2
+p
 
 
+###corvariance
+
+##1
+x = c(160,170,180)
+y = c(64,68,72)
+cov(x,y)
+plot(x,y)
+
+##2 mtcars
+data(mtcars)
+cov(mtcars)
+cpr(mtcars)
+
+##3
+gdp = read.csv("E:\\R\\data\\gdp.csv",header = T)
+gdp = gdp[1:15,] #ignore NA row
+gdp$GDP = as.numeric(sub(",","",gdp$GDP))
+gdp$Export = as.numeric(sub(",","",gdp$Export))
+cor(gdp$Export,gdp$GDP)
+
+#
+#install.packages("C50")
+library(C50)
+
+data(churn)
+str(churnTrain)
+!names(churnTrain) %in% c("state", "area_code", "account_length")
+
+variable.list = !names(churnTrain) %in% c("state", "area_code", "account_length")
+churnTrain= churnTrain[,variable.list]
+
+str(churnTrain)
+
+#set training and testing set
+set.seed(2365)
+ind = sample(1:2,size = nrow(churnTrain),replace = T,prob = c(0.7,0.3))
+trainSet= churnTrain[ind==1,]
+testSet = churnTrain[ind==2,]
+trainSet
+testSet
+
+#rpart
+install.packages('rpart')
+library('rpart')
+
+churn.rp = rpart(churn ~.,data=trainSet)
+churn.rp
+summary(churn.rp)
+
+plot(churn.rp)
+plot(churn.rp,margin = 0.1,uniform = T)
+text(churn.rp,all=T,use.n=T)
+#prune
+which.min(churn.rp$cptable[,"xerror"]) #7
+churn.cp = churn.rp$cptable[which.min(churn.rp$cptable[,"xerror"]), "CP"]
+churn.cp
+prune.tree = prune(churn.rp,cp=churn.cp)
+
+plot(prune.tree,margin = 0.1)
+text(prune.tree,all = T,use.n = T)
+
+predictions = predict(prune.tree,testSet,type = "class")
+table(predictions,testSet$churn)
 
 
+#confusion
+#install.packages('caret')
+#install.packages('e1071')
+#install.packages('lattice')
+#install.packages('ggplot2')
+library('caret')
+library('e1071')
+confusionMatrix(table(predictions,testSet$churn))
+
+#CTree
+install.packages('party')
+library('party')
+ctree.model = ctree(churn ~.,data = trainSet)
+plot(ctree.model)
+
+daycharge.model= ctree(churn ~ total_day_charge + international_plan, data = trainSet)
+plot(daycharge.model)
+
+ctree.predict = predict(ctree.model,testSet)
+table(ctree.predict,testSet$churn)
+
+confusionMatrix(table(ctree.predict,testSet$churn))
+
+#C5.0
+install.packages("C50")
+library('C50')
+c50.model = C5.0(churn ~.,data = trainSet)
+c = C5.0Control(minCases = 20)
+C50.model = C5.0(churn~.,data = trainSet,control=c)
+plot(c50.model)
+
+#K fold
+
+#caret cross-validation
+#install.packages('caret')
+library('caret')
+control = trainControl(method = "repeatedcv",number = 10,repeats = 3)
+model = train(churn ~.,data = trainSet,method="rpart",trControl=control)
+model
+predictions = predict(model,testSet)
+table(predictions,testSet$churn)
+
+#04/11
+library(C50)
+data(churn)
+variable.list = !names(churnTrain) %in% c('state','area_code','account_length')
+churnTrain=churnTrain[,variable.list]
+str(churnTrain)
+
+set.seed(2)
+#把資料分成training data 和 testing data
+ind<-sample(1:2, size=nrow(churnTrain), replace=T, prob=c(0.7, 0.3))
+trainset=churnTrain[ind==1,]
+testset=churnTrain[ind==2,]
+
+churn.rp<-rpart(churn ~., data=trainset)
+churn.rp
+summary(churn.rp)
+
+par(mfrow=c(1,1))
+plot(churn.rp, uniform=TRUE,branch = 0.6, margin=0.1)
+text(churn.rp, all=TRUE, use.n=TRUE)
+
+min(churn.rp$cptable[,"xerror"])
+which.min(churn.rp$cptable[,"xerror"])
+churn.cp = churn.rp$cptable[which.min(churn.rp$cptable[,"xerror"]), "CP"]
+prune.tree=prune(churn.rp, cp=churn.cp)
+
+plot(prune.tree, margin=0.1)
+text(prune.tree, all=TRUE, use.n=TRUE, cex=0.7)
+
+predictions <-predict(prune.tree, testset,type = "class")
+table(testset$churn, predictions)
+
+library(caret)
+library(e1071)
+confusionMatrix(table(predictions, testset$churn))
 
 
+library(caret)
+control=trainControl(method="repeatedcv", number=10, repeats=3)
+#control=trainControl(method="repeatedcv", number=10, repeats=3,classProbs = TRUE,summaryFunction = twoClassSummary)
+model =train(churn~., data=trainset, method="rpart", trControl=control)
 
+predictions = predict(model, testset)
 
+table(predictions,testset$churn)
+confusionMatrix(table(predictions,testset$churn))
 
+#ROC
+install.packages("ROCR")
+library(ROCR)
+predictions = predict(churn.rp,testset,type = "prob")
 
+head(predictions)
+pred.to.roc<-predictions[, 1]
+head(pred.to.roc)
+?prediction
+pred.rocr<-prediction(pred.to.roc, testset$churn)
+pred.rocr
+?performance
+perf.tpr.rocr<-performance(pred.rocr, measure="tpr",x.measure="fpr")
+perf.rocr<-performance(pred.rocr, measure ="auc", x.measure="cutoff")
+plot(perf.tpr.rocr,colorize=T,main=paste("AUC:",(perf.rocr@y.values)))
 
+#trees to curve
+#rpart
+library('rpart')
+churn.rp<-rpart(churn ~., data=trainset)
 
+#ctree
+#install.packages("party")
+library('party')
+ctree.model = ctree(churn ~ . , data = trainset)
 
+#C5.0
+library(C50)
+c50.model = C5.0(churn ~., data=trainset)
 
+rp.predict.prob = predict(churn.rp, testset,type='prob')
+c50.predict.prob = predict(c50.model,testset,type='prob')
+ctree.predict.prob = sapply(predict(ctree.model ,testset,type='prob'),function(e){unlist(e)[1]})
+rp.prediction = prediction(rp.predict.prob[,1],testset$churn)
+c50.prediction = prediction(c50.predict.prob[,1],testset$churn)
+ctree.prediction = prediction(ctree.predict.prob,testset$churn)
+rp.performance = performance(rp.prediction, "tpr","fpr")
+c50.performance = performance(c50.prediction, "tpr","fpr")
+ctree.performance = performance(ctree.prediction, "tpr","fpr")
+plot(rp.performance,col='red')
+plot(c50.performance, add=T,col='green')
+plot(ctree.performance, add=T,col='blue')
 
+#
+x =c(0, 0, 1, 1, 1, 1)
+y =c(1, 0, 1, 1, 0, 1)
 
+#euclidean
+dist(rbind(x,y),method = "euclidean")
+rbind(x,y)
+sqrt(2)
+dist(rbind(x,y), method ="minkowski", p=2)
 
+#city block
+dist(rbind(x,y), method ="manhattan")
+sum(abs(x-y))
+dist(rbind(x,y), method ="minkowski", p=1)
 
+z = c(1,1,1,1,1,1)
+rbind(rbind(x,y),z)
+dist(rbind(rbind(x,y),z),method ="euclidean")
 
+#clustering
+customer=read.csv('E:\\R\\teacherData\\data\\customer.csv',header=TRUE)
+head(customer)
+str(customer)
 
+#scale
+customer_s = scale(customer[,-1])
+round(mean(customer_s[,-1]))
+round(sd(customer_s[,-1]))
+
+#hclust
+?hclust
+hc = hclust(dist(customer_s,method = "euclidean"),method="ward.D2")
+plot(hc,hang =-0.01,cex=0.7)
+
+hc3 = hclust(dist(customer),method = "single")
+plot(hc3,hang =-0.01,cex=0.7)
+
+#form up to down
+install.packages('cluster')
+library(cluster)
+?diana
+dv =diana(customer_s, metric ="euclidean")
+summary(dv)
+plot(dv)
+
+?cutree
+fit = cutree(hc,k=4)
+fit
+
+str(customer_s)
+set.seed(22)
+fit =kmeans(customer_s, centers=4)
+?kmeans
+
+barplot(t(fit$centers), beside =TRUE,xlab="cluster", ylab="value")
+
+#iris by kmeans
+set.seed(22)
+data(iris)
+iris_s=scale(iris[,-5])
+head(iris_s)
+
+#ask 3 set
+fit = kmeans(iris_s,3)
+fit
+barplot(t(fit$centers),beside = T,xlab="cluster", ylab="value")
+plot(iris, col=fit$cluster)
+plot(iris$Petal.Length, iris$Petal.Width, col=fit$cluster)
+
+head(iris)
+fit
+
+#evaluate model
+
+set.seed(22)
+km =kmeans(customer_s, 4)
+kms=silhouette(km$cluster,dist(customer_s))
+summary(kms)
+plot(kms)
+
+#
+nk=2:10
+sapply(nk, function(k){})
+set.seed(22)
+WSS =sapply(nk, function(k){kmeans(customer_s, centers=k)$tot.withinss})
+WSS
+plot(x=nk, y=WSS, type="l", xlab="number of k", ylab="within sum of squares")
+
+#
+install.packages("fpc")
+
+library(fpc)
+#install.packages("robustbase", repos="http://R-Forge.R-project.org")
+nk=2:10
+SW =sapply(nk, function(k){set.seed(22);cluster.stats(dist(customer), kmeans(customer, centers=k)$cluster)$avg.silwidth})
+
+kmeans(customer, centers=2)
+?cluster.stats
+cluster.stats(dist(customer), kmeans(customer, centers=2)$cluster)
+
+plot(x=nk, y=SW, type="l", xlab="number of clusers", ylab="average silhouette width")
+
+nk[which.max(SW)]
+#密度方法
+install.packages("mlbench")
+# mlbench package provides many methods to generate simulated data with different shapes and sizes.
+#In this example, we generate a Cassini problem graph
+library(mlbench)
+#install.packages("fpc")
+library(fpc)
+set.seed(2)
+p = mlbench.cassini(500)
+plot(p$x)
+
+?mlbench.cassini
+
+ds = dbscan(data = dist(p$x),eps= 0.2, MinPts = 4, method="dist")
+ds
+plot(ds, p$x)
 
 
 
